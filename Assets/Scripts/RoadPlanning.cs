@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -34,14 +35,19 @@ namespace RoadPlanning
         IRoad ClosestRoad(Vector3 position);
 
         /// <summary>
-        /// Get the closest road to a position within a district.
+        /// Get the closest road to a position within a selection of roads.
         /// </summary>
-        IRoad ClosestRoad(Vector3 position, IDistrict district);
+        IRoad ClosestRoad(Vector3 position, IEnumerable<IRoad> roads);
 
         /// <summary>
         /// Get the district adjacent to a side of a road.
         /// </summary>
-        IDistrict AdjacentDistrict(Side side, IRoad road);
+        IList<IRoad> AdjacentDistrict(Side side, IRoad road);
+
+        static string DistrictToString(IEnumerable<IRoad> district)
+        {
+            return string.Join(", ", district.Select(road => road.Name));
+        }
     }
 
     /// <summary>
@@ -55,7 +61,7 @@ namespace RoadPlanning
 
         private readonly IDictionary<INode, IDictionary<INode, IRoad>> roadsByNode;
 
-        private readonly IDictionary<IRoad, IDictionary<Side, IDistrict>> districtsByRoadSide;
+        private readonly IDictionary<IRoad, IDictionary<Side, IList<IRoad>>> districtsByRoadSide;
 
         public Plan(IDictionary<INode, IDictionary<INode, IRoad>> graph)
         {
@@ -66,35 +72,123 @@ namespace RoadPlanning
             Roads = graph.Values.SelectMany(connections => connections.Values).ToHashSet();
 
             // Prepare the cache for districts by road side.
-            districtsByRoadSide = new Dictionary<IRoad, IDictionary<Side, IDistrict>>();
+            districtsByRoadSide = new Dictionary<IRoad, IDictionary<Side, IList<IRoad>>>();
             foreach (var road in Roads)
             {
-                districtsByRoadSide[road] = new Dictionary<Side, IDistrict>();
+                districtsByRoadSide[road] = new Dictionary<Side, IList<IRoad>>();
             }
 
             // Build all cycles in the graph.
-            var allCycles = BuildAllCycles(graph.First().Key, null, new List<INode>(), new HashSet<IRoad>(), new HashSet<ISet<IRoad>>());
-
-            // Find the shortest cycles to cover the interior districts.
-            var interiorCycles = FindInteriorDistrictCycles(allCycles);
-
-            // Build the cycle that forms the infinite exterior district. TODO: This cycle has already been found, maybe it would be better to find it from all the cycles than to build it from the interior cycles.
-            var exteriorCycle = BuildExteriorDistrictCycle(interiorCycles);
-
-            Debug.Log($"From {allCycles.Count} cycles, found {interiorCycles.Count} interior cycles and an exterior cycle of {exteriorCycle.Count} roads.");
-            foreach (var cycle in allCycles)
+            var cycles = BuildAllCycles(graph.First().Key, null, new List<INode>(), new HashSet<IRoad>(), new HashSet<IList<IRoad>>());
+            if (cycles.Count == 0)
             {
-                Debug.Log($"Cycle: {string.Join(", ", cycle.Select(road => road.Name))}");
+                throw new ArgumentException("No cycles found, plan is invalid.");
             }
 
-            foreach (var cycle in interiorCycles)
+            // Find the interior districts from all the cycles.
+            var interiorDistricts = FindInteriorDistricts(cycles);
+            foreach (var interiorDistrict in interiorDistricts)
             {
-                Debug.Log($"Interior cycle: {string.Join(", ", cycle.Select(road => road.Name))}");
+                Debug.Log($"Interior district: {IPlan.DistrictToString(interiorDistrict)}");
             }
 
-            Debug.Log($"Exterior cycle: {string.Join(", ", exteriorCycle.Select(road => road.Name))}");
+            if (interiorDistricts.Count == 1)
+            {
+                // If there is only one interior district, then it shares all its roads with the exterior district, so duplicate it in case we need to detect whether we've crossed the plan boundary.
+                var exteriorDistrict = new List<IRoad>(interiorDistricts.First());
+                Debug.Log($"Exterior district: {IPlan.DistrictToString(exteriorDistrict)}");
 
-            // TODO: Construct the districts.
+                // TODO: Figure out how to determine which side of the road is the interior side when there is only one district.
+                CacheDistrictSide(exteriorDistrict, exteriorDistrict.First(), Side.Left);
+            }
+            else
+            {
+                // Build the exterior district from the interior districts. TODO: This cycle has already been found, maybe it would be better to find it from all the cycles than to build it from the interior districts.
+                var exteriorDistrict = BuildExteriorDistrict(interiorDistricts);
+                Debug.Log($"Exterior district: {IPlan.DistrictToString(exteriorDistrict)}");
+
+                // Get a connected pair of roads where one is on the exterior and the other is on the interior.
+                IRoad exteriorRoad = null;
+                IRoad interiorRoad = null;
+                INode connectingNode = null;
+                foreach (var road in exteriorDistrict)
+                {
+                    exteriorRoad = road;
+                    interiorRoad = ConnectingRoads(road.Start).Where(road => !exteriorDistrict.Contains(road)).First();
+                    if (interiorRoad != null)
+                    {
+                        connectingNode = road.Start;
+                        Debug.Log($"Exterior road {exteriorRoad.Name} connects to interior road {interiorRoad.Name} at start node {connectingNode.Name}.");
+                        break;
+                    }
+                    interiorRoad = ConnectingRoads(road.End).Where(road => !exteriorDistrict.Contains(road)).First();
+                    if (interiorRoad != null)
+                    {
+                        connectingNode = road.End;
+                        Debug.Log($"Exterior road {exteriorRoad.Name} connects to interior road {interiorRoad.Name} at end node {connectingNode.Name}.");
+                        break;
+                    }
+                }
+
+                // Get the node of the interior road that is not shared with the exterior road.
+                var referenceNode = interiorRoad.Start.Equals(connectingNode) ? interiorRoad.End : interiorRoad.Start;
+
+                // That node must be on the interior side of the exterior road.
+                var interiorSide = exteriorRoad.SideOfPoint(referenceNode.Position);
+
+                Debug.Log($"Reference node {referenceNode.Name} is on the {interiorSide} side of exterior road {exteriorRoad.Name}.");
+
+                // The exterior district must be on the opposite side.
+                CacheDistrictSide(exteriorDistrict, exteriorRoad, interiorSide.Opposite());
+                Debug.Log($"Cached exterior district {IPlan.DistrictToString(exteriorDistrict)} on the {interiorSide.Opposite()} side of road {exteriorRoad.Name}.");
+            }
+
+            // Queue up the interior districts and propagate the exterior sides inwards.
+            var pendingDistricts = new Queue<IList<IRoad>>(interiorDistricts);
+            while (pendingDistricts.Count > 0)
+            {
+                // Check if the district contains a road that has already been cached with another district.
+                var pendingDistrict = pendingDistricts.Dequeue();
+                var cachedRoad = pendingDistrict.FirstOrDefault(road => districtsByRoadSide[road].Count > 0);
+                if (cachedRoad != null)
+                {
+                    // This district must be on the opposite side of the road.
+                    var cachedSide = districtsByRoadSide[cachedRoad].Keys.First();
+                    CacheDistrictSide(pendingDistrict, cachedRoad, cachedSide.Opposite());
+                    Debug.Log($"Cached district: {IPlan.DistrictToString(pendingDistrict)} on the {cachedSide.Opposite()} side of road {cachedRoad.Name}.");
+                }
+                else
+                {
+                    // The district has no roads it can reference yet, so move it to the back of the queue.
+                    pendingDistricts.Enqueue(pendingDistrict);
+                }
+            }
+
+            Debug.Log("Plan created.");
+        }
+
+        /// <summary>
+        /// Cache the district on a side of a road and propagate through all the roads of the district, inverting the side if travelling backwards along a road instead of forwards.
+        /// </summary>
+        private void CacheDistrictSide(IList<IRoad> district, IRoad road, Side side)
+        {
+            var startIndex = district.IndexOf(road);
+            if (startIndex == -1) {
+                throw new ArgumentException("The reference road is not in the district.");
+            }
+
+            districtsByRoadSide[road][side] = district;
+
+            var currentRoad = road;
+            var currentSide = side;
+            for (var i = 1; i < district.Count; ++i)
+            {
+                var index = (startIndex + i) % district.Count;
+                var previousRoad = currentRoad;
+                currentRoad = district[index];
+                currentSide = currentRoad.Start.Equals(currentRoad.End) || currentRoad.End.Equals(currentRoad.Start) ? currentSide : currentSide.Opposite();
+                districtsByRoadSide[currentRoad][currentSide] = district;
+            }
         }
 
         public Plan(IEnumerable<IRoadBuilder> graph) : this(IRoadBuilder.Build(graph)) { }
@@ -103,7 +197,7 @@ namespace RoadPlanning
         /// <summary>
         /// Perform a depth-first search to find all unique road cycles, building up a found cycles cache.
         /// </summary>
-        private ICollection<ISet<IRoad>> BuildAllCycles(INode current, INode previous, IList<INode> trace, ISet<IRoad> travelled, ICollection<ISet<IRoad>> found)
+        private ICollection<IList<IRoad>> BuildAllCycles(INode current, INode previous, IList<INode> trace, ISet<IRoad> travelled, ICollection<IList<IRoad>> found)
         {
             trace.Add(current);
 
@@ -130,7 +224,7 @@ namespace RoadPlanning
                 if (trace.Contains(connection))
                 {
                     // Start with the road from the connection to the current node.
-                    var cycle = new HashSet<IRoad>() {
+                    var cycle = new List<IRoad>() {
                         road,
                         roadsByNode[current][previous]
                     };
@@ -144,7 +238,7 @@ namespace RoadPlanning
                     } while (!trace[index].Equals(connection));
 
                     // Cache the cycle if we haven't already found this cycle before.
-                    if (!found.Any(existing => existing.SetEquals(cycle)))
+                    if (!found.Any(existing => existing.Count == cycle.Count && existing.All(road => cycle.Contains(road))))
                     {
                         found.Add(cycle);
                     }
@@ -163,11 +257,11 @@ namespace RoadPlanning
         }
 
         /// <summary>
-        /// Reduce cycles to cover all roads with only the shortest cycles.
+        /// Find the interior districts by reducing a set of cycles to cover all roads with only the shortest cycles.
         /// </summary>
-        private ICollection<ISet<IRoad>> FindInteriorDistrictCycles(ICollection<ISet<IRoad>> cycles)
+        private ICollection<IList<IRoad>> FindInteriorDistricts(ICollection<IList<IRoad>> cycles)
         {
-            var reduced = new HashSet<ISet<IRoad>>();
+            var reduced = new HashSet<IList<IRoad>>();
             var ordered = cycles.OrderBy(cycle => cycle.Count);
             var covered = new HashSet<IRoad>();
             while (covered.Count < Roads.Count())
@@ -181,23 +275,26 @@ namespace RoadPlanning
         }
 
         /// <summary>
-        /// Build the cycle which forms the exterior from a set of unique interior cycles.
+        /// Build the exterior district from a set of interior districts.
         /// </summary>
-        private ISet<IRoad> BuildExteriorDistrictCycle(ICollection<ISet<IRoad>> interiorCycles)
+        private IList<IRoad> BuildExteriorDistrict(ICollection<IList<IRoad>> interiorDistricts)
         {
-            var exterior = new HashSet<IRoad>();
-            foreach (var cycle in interiorCycles)
+            var exteriorDistrict = new List<IRoad>();
+            foreach (var interiorDistrict in interiorDistricts)
             {
-                foreach (var road in cycle)
+                foreach (var road in interiorDistrict)
                 {
-                    // Construct the exterior from roads that are only covered by one cycle - interior roads are shared by two cycles.
-                    if (!interiorCycles.Any(other => other != cycle && other.Contains(road)))
+                    // Construct the exterior from roads that are only covered by one cycle - interior roads are shared by two districts.
+                    if (!interiorDistricts.Any(other => other != interiorDistrict && other.Contains(road)))
                     {
-                        exterior.Add(road);
+                        exteriorDistrict.Add(road);
                     }
                 }
             }
-            return exterior;
+
+            // TODO: Sort the list so that adjacent roads share nodes.
+
+            return exteriorDistrict;
         }
 
         public IEnumerable<INode> ConnectingNodes(INode node)
@@ -222,14 +319,14 @@ namespace RoadPlanning
                 .First();
         }
 
-        public IRoad ClosestRoad(Vector3 position, IDistrict district)
+        public IRoad ClosestRoad(Vector3 position, IEnumerable<IRoad> roads)
         {
-            return district.Sides.Keys
+            return roads
                 .OrderBy(road => Vector3.SqrMagnitude(road.ClosestPoint(position) - position))
                 .First();
         }
 
-        public IDistrict AdjacentDistrict(Side side, IRoad road)
+        public IList<IRoad> AdjacentDistrict(Side side, IRoad road)
         {
             return districtsByRoadSide[road][side];
         }
@@ -289,29 +386,6 @@ namespace RoadPlanning
     }
 
     /// <summary>
-    /// Describes a region defined by a set of roads and the sides of those roads that the district is on.
-    /// </summary>
-    public interface IDistrict
-    {
-        public string Name { get; }
-
-        public IReadOnlyDictionary<IRoad, Side> Sides { get; }
-    }
-
-    class District : IDistrict
-    {
-        public string Name { get; private set; }
-
-        public IReadOnlyDictionary<IRoad, Side> Sides { get; private set; }
-
-        public District(IEnumerable<(IRoad, Side)> roads, string name)
-        {
-            Sides = roads.ToDictionary(pair => pair.Item1, pair => pair.Item2);
-            Name = name;
-        }
-    }
-
-    /// <summary>
     /// Describes a connection position for roads.
     /// </summary>
     public interface INode
@@ -366,5 +440,14 @@ namespace RoadPlanning
     {
         Left,
         Right
+    }
+
+    public static class SideExtensions
+    {
+        public static Side Opposite(this Side side)
+        {
+            // This enum is just a new flavour of bool. Yes it's less efficient, but I like how declarative this is compared with getting a road by "true" or "false".
+            return side == Side.Left ? Side.Right : Side.Left;
+        }
     }
 }

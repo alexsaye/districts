@@ -1,4 +1,6 @@
 using RoadPlanning;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class RoadTracker : MonoBehaviour
@@ -11,7 +13,7 @@ public class RoadTracker : MonoBehaviour
     /// <summary>
     /// The current district that the tracker is in. Cached for performant closest road lookup, as only the roads within the district need to be considered in most cases.
     /// </summary>
-    private IDistrict district;
+    private IEnumerable<IRoad> currentDistrict;
 
     private void Start()
     {
@@ -25,9 +27,9 @@ public class RoadTracker : MonoBehaviour
         var road = ClosestRoad();
         Debug.Log($"Closest road: {road.Name}");
         Debug.Log($"Current side of road: {road.SideOfPoint(transform.position)}");
-        if (district != null)
+        if (currentDistrict != null)
         {
-            Debug.Log($"Current district: {district.Name}");
+            Debug.Log($"Current district: {IPlan.DistrictToString(currentDistrict)}");
         }
     }
 
@@ -35,8 +37,12 @@ public class RoadTracker : MonoBehaviour
     {
         if (plan != null)
         {
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(transform.position, ClosestRoad().ClosestPoint(transform.position));
+            var closestRoad = ClosestRoad();
+            var closestPoint = closestRoad.ClosestPoint(transform.position);
+            var side = closestRoad.SideOfPoint(transform.position);
+            
+            Gizmos.color = side == Side.Left ? Color.red : Color.blue;
+            Gizmos.DrawLine(transform.position, closestPoint);
             Gizmos.color = Color.white;
         }
     }
@@ -55,8 +61,8 @@ public class RoadTracker : MonoBehaviour
         Debug.Log($"Initialised side of road: {side}");
 
         // Cache the district on this side of the road.
-        district = plan.AdjacentDistrict(side, road);
-        Debug.Log($"Initialised district: {district.Name}");
+        currentDistrict = plan.AdjacentDistrict(side, road);
+        Debug.Log($"Initialised district: {IPlan.DistrictToString(currentDistrict)}");
 
         return road;
     }
@@ -67,26 +73,29 @@ public class RoadTracker : MonoBehaviour
     public IRoad ClosestRoad()
     {
         // Get the closest road in the cached district to our position.
-        var road = plan.ClosestRoad(transform.position, district);
+        var road = plan.ClosestRoad(transform.position, currentDistrict);
         
         // Determine which side of the road we are on.
         var side = road.SideOfPoint(transform.position);
 
-        // Are we still on the side that the cached district expects for the road?
-        if (side == district.Sides[road])
+        // Get the expected district on this side of the road.
+        var district = plan.AdjacentDistrict(side, road);
+
+        // Are we still in the cached district?
+        if (district == currentDistrict)
         {
             // We are still in the cached district, return the closest road.
             return road;
         }
 
-        // We have crossed to the opposite side of the road, so get and cache the district on this side.
-        district = plan.AdjacentDistrict(side, road);
+        // We have crossed to the opposite side of the road, so cache the district on this side.
+        currentDistrict = district;
 
         // Is the road we found before still the closest road?
         if (road == plan.ClosestRoad(transform.position, district))
         {
             // We have crossed into the district.
-            Debug.Log($"Crossed into district: {district.Name}");
+            Debug.Log($"Crossed into district: {IPlan.DistrictToString(district)}");
             return road;
         }
 
