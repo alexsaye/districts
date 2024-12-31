@@ -72,77 +72,38 @@ namespace RoadPlanning
                 districtsByRoadSide[road] = new Dictionary<Side, IDistrict>();
             }
 
-            // Find all cycles, reduce to the shortest cycles for the districts within the plan, then add the boundary cycle for the infinite district outside of the plan.
-            var cycles = FindAllCycles();
-            Debug.Log($"Found all {cycles.Count} cycles.");
-            cycles = ShortestCycles(cycles);
-            cycles.Add(BoundaryCycle(cycles));
-            Debug.Log($"Reduced to {cycles.Count} district cycles.");
-            foreach (var cycle in cycles)
+            // Build all cycles in the graph.
+            var allCycles = BuildAllCycles(graph.First().Key, null, new List<INode>(), new HashSet<IRoad>(), new HashSet<ISet<IRoad>>());
+
+            // Find the shortest cycles to cover the interior districts.
+            var interiorCycles = FindInteriorDistrictCycles(allCycles);
+
+            // Build the cycle that forms the infinite exterior district. TODO: This cycle has already been found, maybe it would be better to find it from all the cycles than to build it from the interior cycles.
+            var exteriorCycle = BuildExteriorDistrictCycle(interiorCycles);
+
+            Debug.Log($"From {allCycles.Count} cycles, found {interiorCycles.Count} interior cycles and an exterior cycle of {exteriorCycle.Count} roads.");
+            foreach (var cycle in allCycles)
             {
                 Debug.Log($"Cycle: {string.Join(", ", cycle.Select(road => road.Name))}");
             }
 
-            // Cache the cycles as districts.
-            foreach (var cycle in cycles)
+            foreach (var cycle in interiorCycles)
             {
-                // TODO Determine the side of the roads in the cycle. I have a suspicion that this can be done during the cycle search, but I'm not sure how.
-                var district = new District(cycle.Select(road => (road, Side.Left)), $"District of roads {string.Join(", ", cycle.Select(road => road.Name))}");
-                foreach (var road in cycle)
-                {
-                    districtsByRoadSide[road][Side.Left] = district;
-                    districtsByRoadSide[road][Side.Right] = district;
-                }
+                Debug.Log($"Interior cycle: {string.Join(", ", cycle.Select(road => road.Name))}");
             }
+
+            Debug.Log($"Exterior cycle: {string.Join(", ", exteriorCycle.Select(road => road.Name))}");
+
+            // TODO: Construct the districts.
         }
 
         public Plan(IEnumerable<IRoadBuilder> graph) : this(IRoadBuilder.Build(graph)) { }
 
-        /// <summary>
-        /// Find all cycles formed by the plan's roads.
-        /// </summary>
-        /// <returns></returns>
-        private ICollection<ISet<IRoad>> FindAllCycles()
-        {
-            var cycles = new HashSet<ISet<IRoad>>();
-            ScanNextCycles(Nodes.First(), null, new List<INode>(), new HashSet<IRoad>(), cycles);
-            return cycles;
-        }
-
-        /// <summary>
-        /// Reduce cycles to cover all roads with only the shortest cycles.
-        /// </summary>
-        private ICollection<ISet<IRoad>> ShortestCycles(ICollection<ISet<IRoad>> cycles)
-        {
-            var reduced = new HashSet<ISet<IRoad>>();
-            var ordered = cycles.OrderBy(cycle => cycle.Count);
-            var covered = new HashSet<IRoad>();
-            while (covered.Count < Roads.Count())
-            {
-                // Find the shortest cycle that covers a road we haven't covered yet, mark its roads as covered and cache it. I'm pretty sure the efficiency of this can be improved.
-                var shortest = ordered.First(cycle => cycle.Any(road => !covered.Contains(road)));
-                covered.UnionWith(shortest);
-                reduced.Add(shortest);
-            }
-            return reduced;
-        }
-
-        /// <summary>
-        /// Find the cycle which forms the boundary.
-        /// </summary>
-        private ISet<IRoad> BoundaryCycle(ICollection<ISet<IRoad>> cycles)
-        {
-            var boundary = new HashSet<IRoad>();
-            // TODO:
-            // Find the first cycle that has a road that is not in any other cycle (ideally this will be any of them if ShortestCycles was called first).
-            // Iteratively find the next road from one of the nodes of the cycle that is itself not in any cycle until we've reached the start again.
-            return boundary;
-        }
 
         /// <summary>
         /// Perform a depth-first search to find all unique road cycles, building up a found cycles cache.
         /// </summary>
-        private void ScanNextCycles(INode current, INode previous, IList<INode> trace, ISet<IRoad> travelled, ICollection<ISet<IRoad>> found)
+        private ICollection<ISet<IRoad>> BuildAllCycles(INode current, INode previous, IList<INode> trace, ISet<IRoad> travelled, ICollection<ISet<IRoad>> found)
         {
             trace.Add(current);
 
@@ -191,12 +152,52 @@ namespace RoadPlanning
                 else
                 {
                     // Otherwise, travel this road and continue the search
-                    ScanNextCycles(connection, current, trace, travelled, found);
+                    BuildAllCycles(connection, current, trace, travelled, found);
                 }
 
                 travelled.Remove(road);
             }
             trace.RemoveAt(trace.Count - 1);
+
+            return found;
+        }
+
+        /// <summary>
+        /// Reduce cycles to cover all roads with only the shortest cycles.
+        /// </summary>
+        private ICollection<ISet<IRoad>> FindInteriorDistrictCycles(ICollection<ISet<IRoad>> cycles)
+        {
+            var reduced = new HashSet<ISet<IRoad>>();
+            var ordered = cycles.OrderBy(cycle => cycle.Count);
+            var covered = new HashSet<IRoad>();
+            while (covered.Count < Roads.Count())
+            {
+                // Find the shortest cycle that covers a road we haven't covered yet, mark its roads as covered and cache it. I'm pretty sure the efficiency of this can be improved.
+                var shortest = ordered.First(cycle => cycle.Any(road => !covered.Contains(road)));
+                covered.UnionWith(shortest);
+                reduced.Add(shortest);
+            }
+            return reduced;
+        }
+
+        /// <summary>
+        /// Build the cycle which forms the exterior from a set of unique interior cycles.
+        /// </summary>
+        private ISet<IRoad> BuildExteriorDistrictCycle(ICollection<ISet<IRoad>> interiorCycles)
+        {
+            var exterior = new HashSet<IRoad>();
+            foreach (var cycle in interiorCycles)
+            {
+                foreach (var road in cycle)
+                {
+                    // Construct the exterior from roads that are only covered by one cycle - interior roads are shared by two cycles.
+                    if (!interiorCycles.Any(other => other != cycle && other.Contains(road)))
+                    {
+                        exterior.Add(road);
+                    }
+                }
+            }
+            return exterior;
         }
 
         public IEnumerable<INode> ConnectingNodes(INode node)
