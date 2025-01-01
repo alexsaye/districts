@@ -63,7 +63,7 @@ public class RoadBuilder : MonoBehaviour, IRoadBuilder
     {
         foreach (var connection in connections)
         {
-            Gizmos.color = selected ? Selection.Contains(connection.gameObject) ? Color.green : Color.yellow : Color.red;
+            Gizmos.color = selected ? Selection.Contains(connection.gameObject) ? Color.green : Color.red : Color.white * 0.5f;
 
             Gizmos.DrawLine(transform.position, connection.transform.position);
 
@@ -78,7 +78,7 @@ public class RoadBuilder : MonoBehaviour, IRoadBuilder
 
 [CustomEditor(typeof(RoadBuilder))]
 [CanEditMultipleObjects]
-public class RoadNodeEditor: Editor
+public class RoadBuilderEditor: Editor
 {
     public override void OnInspectorGUI()
     {
@@ -95,7 +95,6 @@ public class RoadNodeEditor: Editor
                 {
                     a.Disconnect(b);
                     b.Disconnect(a);
-                    Repaint();
                 }
                 else if (GUILayout.Button("Reverse Selected Nodes"))
                 {
@@ -103,13 +102,11 @@ public class RoadNodeEditor: Editor
                     {
                         a.Disconnect(b);
                         b.Connect(a);
-                        Repaint();
                     }
                     else
                     {
                         b.Disconnect(a);
                         a.Connect(b);
-                        Repaint();
                     }
                 }
             }
@@ -117,7 +114,6 @@ public class RoadNodeEditor: Editor
             {
                 a.Connect(b);
                 b.Disconnect(a);
-                Repaint();
             }
         }
     }

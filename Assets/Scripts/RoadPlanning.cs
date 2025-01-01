@@ -42,7 +42,7 @@ namespace RoadPlanning
         /// <summary>
         /// Get the district adjacent to a side of a road.
         /// </summary>
-        IList<IRoad> AdjacentDistrict(Side side, IRoad road);
+        IList<IRoad> AdjacentDistrict(IRoad road, Side side);
 
         static string DistrictToString(IEnumerable<IRoad> district)
         {
@@ -338,7 +338,7 @@ namespace RoadPlanning
                 .First();
         }
 
-        public IList<IRoad> AdjacentDistrict(Side side, IRoad road)
+        public IList<IRoad> AdjacentDistrict(IRoad road, Side side)
         {
             return districtsBySideOfRoad[road][side];
         }
