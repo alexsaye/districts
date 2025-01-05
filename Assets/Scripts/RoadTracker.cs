@@ -13,7 +13,7 @@ public class RoadTracker : MonoBehaviour
     /// <summary>
     /// The current district that the tracker is in. Cached for performant closest road lookup, as only the roads within the district need to be considered in most cases.
     /// </summary>
-    private IEnumerable<IRoad> currentDistrict;
+    private IEnumerable<INode> currentDistrict;
 
     private void Start()
     {
@@ -38,7 +38,7 @@ public class RoadTracker : MonoBehaviour
 
         Gizmos.color = Color.green;
         var district = plan.AdjacentDistrict(closestRoad, side);
-        foreach (var  road in district)
+        foreach (var road in plan.ConnectingRoads(district))
         {
             Gizmos.DrawLine(road.Start.Position, road.End.Position);
         }
@@ -61,7 +61,7 @@ public class RoadTracker : MonoBehaviour
 
         // Cache the district on this side of the road.
         currentDistrict = plan.AdjacentDistrict(road, side);
-        Debug.Log($"Initialised district: {IPlan.DistrictToString(currentDistrict)}");
+        Debug.Log($"Initialised district: {IPlan.RouteToString(currentDistrict)}");
 
         return road;
     }
@@ -94,7 +94,7 @@ public class RoadTracker : MonoBehaviour
         if (road == plan.ClosestRoad(transform.position, district))
         {
             // We have crossed into the district.
-            Debug.Log($"Crossed into district: {IPlan.DistrictToString(district)}");
+            Debug.Log($"Crossed into district: {IPlan.RouteToString(district)}");
             return road;
         }
 

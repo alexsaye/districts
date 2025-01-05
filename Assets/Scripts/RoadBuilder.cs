@@ -46,7 +46,7 @@ public class RoadBuilder : MonoBehaviour, IRoadBuilder
     public IRoad Build(INode node)
     {
         // TODO: more road types, for now a straight road will do.
-        return new StraightRoad(this, node, $"{Name}->{node.Name}");
+        return new StraightRoad(this, node, $"{Name} -> {node.Name}");
     }
 
     private void OnDrawGizmos()
