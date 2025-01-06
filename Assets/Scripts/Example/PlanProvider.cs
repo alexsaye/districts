@@ -1,7 +1,7 @@
-using UnityEngine;
 using RoadPlanning;
+using UnityEngine;
 
-public class PlanManager : MonoBehaviour
+public class PlanProvider : MonoBehaviour
 {
     private IPlan plan;
     public IPlan Plan
@@ -10,7 +10,7 @@ public class PlanManager : MonoBehaviour
         {
             if (plan == null)
             {
-                plan = new Plan(GetComponentsInChildren<RoadBuilder>());
+                plan = new Plan(GetComponentsInChildren<PlanBuilderNode>());
             }
             return plan;
         }

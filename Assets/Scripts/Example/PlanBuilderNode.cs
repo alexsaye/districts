@@ -4,23 +4,23 @@ using UnityEditor;
 using RoadPlanning;
 using System;
 
-public class RoadBuilder : MonoBehaviour, IRoadBuilder
+public class PlanBuilderNode : MonoBehaviour, IPlanBuilderNode
 {
     public string Name => name;
 
     public Vector3 Position => transform.position;
 
-    public IEnumerable<IRoadBuilder> Connections => connections;
+    public IEnumerable<IPlanBuilderNode> Connections => connections;
 
     [SerializeField]
-    private List<RoadBuilder> connections;
+    private List<PlanBuilderNode> connections;
 
-    public bool IsConnected(RoadBuilder node)
+    public bool IsConnected(PlanBuilderNode node)
     {
         return connections.Contains(node);
     }
 
-    public void Connect(RoadBuilder node)
+    public void Connect(PlanBuilderNode node)
     {
         if (node.IsConnected(this))
         {
@@ -34,7 +34,7 @@ public class RoadBuilder : MonoBehaviour, IRoadBuilder
         }
     }
 
-    public void Disconnect(RoadBuilder node)
+    public void Disconnect(PlanBuilderNode node)
     {
         if (IsConnected(node))
         {
@@ -76,9 +76,9 @@ public class RoadBuilder : MonoBehaviour, IRoadBuilder
     }
 }
 
-[CustomEditor(typeof(RoadBuilder))]
+[CustomEditor(typeof(PlanBuilderNode))]
 [CanEditMultipleObjects]
-public class RoadBuilderEditor: Editor
+public class RoadBuilderExampleEditor : Editor
 {
     public override void OnInspectorGUI()
     {
@@ -87,8 +87,8 @@ public class RoadBuilderEditor: Editor
         if (targets.Length == 2)
         {
             // The earliest clicked is the latest in the array.
-            RoadBuilder a = (RoadBuilder)targets[1];
-            RoadBuilder b = (RoadBuilder)targets[0];
+            PlanBuilderNode a = (PlanBuilderNode)targets[1];
+            PlanBuilderNode b = (PlanBuilderNode)targets[0];
             if (a.IsConnected(b) || b.IsConnected(a))
             {
                 if (GUILayout.Button("Disconnect Selected Nodes"))

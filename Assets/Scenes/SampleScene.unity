@@ -645,7 +645,7 @@ GameObject:
   - component: {fileID: 402441710}
   - component: {fileID: 402441709}
   m_Layer: 0
-  m_Name: Player
+  m_Name: Navigator
   m_TagString: Untagged
   m_Icon: {fileID: 3936346786652291628, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -660,7 +660,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 402441708}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4526076af5265314f888062839aeb760, type: 3}
+  m_Script: {fileID: 11500000, guid: 09d2dda0950eb6643ae01323296c90bd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!4 &402441710
@@ -2311,7 +2311,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2096426896
 Transform:
   m_ObjectHideFlags: 0
@@ -2338,7 +2338,6 @@ Transform:
   - {fileID: 476943253}
   - {fileID: 556674932}
   - {fileID: 490826827}
-  - {fileID: 2117665846}
   - {fileID: 1419561150}
   - {fileID: 1783297685}
   - {fileID: 1087345555}
@@ -2346,6 +2345,7 @@ Transform:
   - {fileID: 309695404}
   - {fileID: 1199417950}
   - {fileID: 403993793}
+  - {fileID: 2117665846}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2096426897
@@ -2418,7 +2418,7 @@ GameObject:
   - component: {fileID: 2117665846}
   - component: {fileID: 2117665847}
   m_Layer: 0
-  m_Name: Troublesome Node
+  m_Name: U
   m_TagString: Untagged
   m_Icon: {fileID: 5132851093641282708, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
