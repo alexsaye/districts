@@ -5,17 +5,21 @@ using UnityEngine;
 namespace RoadPlanning
 {
     /// <summary>
-    /// A plan of nodes which form roads, routes, and districts.
+    /// A plan of nodes which form roads and districts.
     /// </summary>
     public class Plan : IPlan
     {
         private readonly IDictionary<INode, IDictionary<INode, IRoad>> roadsByNode;
 
-        private readonly IDictionary<IRoad, IDictionary<Side, IEnumerable<INode>>> districtsBySideOfRoad;
+        private readonly IDictionary<IRoad, IDictionary<Side, IRoute>> districtsBySideOfRoad;
+
+        private readonly ICollection<IRoute> districts;
 
         public IEnumerable<INode> Nodes => roadsByNode.Keys;
 
         public IEnumerable<IRoad> Roads => districtsBySideOfRoad.Keys;
+
+        public IEnumerable<IRoute> Districts => districts;
 
         public Plan(IEnumerable<IPlanBuilderNode> graph) : this(IPlanBuilderNode.Build(graph)) { }
 
@@ -29,10 +33,11 @@ namespace RoadPlanning
             }
 
             // Build the districts by traversing each road forwards and backwards until we cover all roads in both directions with non-overlapping cycles.
-            districtsBySideOfRoad = new Dictionary<IRoad, IDictionary<Side, IEnumerable<INode>>>();
+            districts = new List<IRoute>();
+            districtsBySideOfRoad = new Dictionary<IRoad, IDictionary<Side, IRoute>>();
             foreach (var road in graph.Values.SelectMany(connections => connections.Values))
             {
-                districtsBySideOfRoad[road] = new Dictionary<Side, IEnumerable<INode>>();
+                districtsBySideOfRoad[road] = new Dictionary<Side, IRoute>();
             }
             var forwards = new HashSet<IRoad>();
             var backwards = new HashSet<IRoad>();
@@ -40,12 +45,14 @@ namespace RoadPlanning
             {
                 if (!forwards.Contains(road))
                 {
-                    BuildDistrict(road.Start, road.End, forwards, backwards, new List<INode>());
+                    var forwardsDistrict = BuildDistrict(road.Start, road.End, forwards, backwards, new List<INode>());
+                    districts.Add(forwardsDistrict);
                 }
 
                 if (!backwards.Contains(road))
                 {
-                    BuildDistrict(road.End, road.Start, forwards, backwards, new List<INode>());
+                    var backwardsDistrict = BuildDistrict(road.End, road.Start, forwards, backwards, new List<INode>());
+                    districts.Add(backwardsDistrict);
                 }
             }
         }
@@ -53,11 +60,11 @@ namespace RoadPlanning
         /// <summary>
         /// Build a district by traversing a road, populating the districts by side of road cache.
         /// </summary>
-        private void BuildDistrict(INode a, INode b, ISet<IRoad> forwards, ISet<IRoad> backwards, ICollection<INode> district)
+        private IRoute BuildDistrict(INode a, INode b, HashSet<IRoad> forwards, HashSet<IRoad> backwards, List<INode> found)
         {
             // Add the first node of the road to the district and cache which direction we're travelling along the road.
             var road = ConnectingRoad(a, b);
-            district.Add(a);
+            found.Add(a);
             if (a == road.Start)
             {
                 forwards.Add(road);
@@ -94,28 +101,33 @@ namespace RoadPlanning
             if (b == connectingRoad.Start && forwards.Contains(connectingRoad) || b == connectingRoad.End && backwards.Contains(connectingRoad))
             {
                 // The connecting road is the start road, so we've completed a district and can re-add the start node (which is b) to close the cycle.
-                district.Add(b);
+                found.Add(b);
+
+                // Create the district from the found nodes.
+                var district = new Route(found);
 
                 // The current side of the road is right if we went forwards along it, left if we went backwards.
                 var currentRoad = connectingRoad;
-                var currentSide = b == connectingRoad.Start ? Side.Right : Side.Left;
+                var currentSide = b == currentRoad.Start ? Side.Right : Side.Left;
                 districtsBySideOfRoad[currentRoad][currentSide] = district;
 
-                // Propagate the current side along the district, inverting it when roads converge or diverge.
-                for (var i = 2; i < district.Count; ++i)
+                // Propagate the current side along the district, inverting it when roads converge or diverge. (Skip the first road as we've just cached its side.)
+                var enumerator = ConnectingRoads(found).GetEnumerator();
+                enumerator.MoveNext();
+                while (enumerator.MoveNext())
                 {
                     var previousRoad = currentRoad;
-                    currentRoad = ConnectingRoad(district.ElementAt(i - 1), district.ElementAt(i));
+                    currentRoad = enumerator.Current;
                     currentSide = IRoad.AreConverging(currentRoad, previousRoad) || IRoad.AreDiverging(currentRoad, previousRoad) ? currentSide.Opposite() : currentSide;
                     districtsBySideOfRoad[currentRoad][currentSide] = district;
-                    Debug.Log($"District {IPlan.RouteToString(district)} is on the {currentSide} of {currentRoad.Name}.");
+                    Debug.Log($"District {string.Join(" -> ", district.Nodes.Select(node => node.Name))} is on the {currentSide} of {currentRoad.Name}.");
                 }
+
+                return district;
             }
-            else
-            {
-                // We haven't travelled the connecting road yet, so continue building the district along it.
-                BuildDistrict(b, connectingNode, forwards, backwards, district);
-            }
+
+            // We haven't travelled the connecting road yet, so continue building the district along it.
+            return BuildDistrict(b, connectingNode, forwards, backwards, found);
         }
 
         public IEnumerable<INode> ConnectedNodes(INode node)
@@ -133,98 +145,26 @@ namespace RoadPlanning
             return roadsByNode[a][b];
         }
 
-        public IEnumerable<IRoad> ConnectingRoads(IEnumerable<INode> route)
+        public IEnumerable<IRoad> ConnectingRoads(IEnumerable<INode> nodes)
         {
-            var routeEnumerator = route.GetEnumerator();
-            if (!routeEnumerator.MoveNext())
+            var enumerator = nodes.GetEnumerator();
+            if (!enumerator.MoveNext())
             {
                 yield break;
             }
 
-            var a = routeEnumerator.Current;
-            while (routeEnumerator.MoveNext())
+            var a = enumerator.Current;
+            while (enumerator.MoveNext())
             {
-                var b = routeEnumerator.Current;
+                var b = enumerator.Current;
                 yield return ConnectingRoad(a, b);
                 a = b;
             }
         }
 
-        public IRoad ClosestRoad(Vector3 position)
-        {
-            return Roads
-                .OrderBy(road => Vector3.SqrMagnitude(road.ClosestPoint(position) - position))
-                .First();
-        }
-
-        public IRoad ClosestRoad(Vector3 position, IEnumerable<INode> route)
-        {
-            return ConnectingRoads(route)
-                .OrderBy(road => Vector3.SqrMagnitude(road.ClosestPoint(position) - position))
-                .First();
-        }
-
-        public IEnumerable<INode> AdjacentDistrict(IRoad road, Side side)
+        public IRoute ConnectedDistrict(IRoad road, Side side)
         {
             return districtsBySideOfRoad[road][side];
         }
-        public ICollection<IEnumerable<INode>> AllRoutes(INode a, INode b, int maxNodes)
-        {
-            var routes = new List<IEnumerable<INode>>();
-            BuildAllRoutes(a, b, new List<INode>(), new HashSet<IRoad>(), routes, maxNodes);
-            return routes;
-        }
-
-        /// <summary>
-        /// Perform a depth-first search to find all unique routes between two nodes, building up a found routes cache by caching the whole trace every time it finds the target node.
-        /// </summary>
-        private void BuildAllRoutes(INode current, INode target, IList<INode> trace, ISet<IRoad> travelled, ICollection<IEnumerable<INode>> routes, int maxNodes)
-        {
-            if (trace.Count == maxNodes)
-            {
-                return;
-            }
-
-            trace.Add(current);
-
-            foreach (var connection in ConnectedNodes(current))
-            {
-                // Don't go whence we came.
-                if (connection == trace.ElementAtOrDefault(trace.Count - 2))
-                {
-                    continue;
-                }
-
-                var road = ConnectingRoad(current, connection);
-
-                // Don't go along a road we've already travelled.
-                if (travelled.Contains(road))
-                {
-                    continue;
-                }
-
-                travelled.Add(road);
-
-                // Have we found the target?
-                if (connection.Equals(target))
-                {
-                    // Cache the route if we haven't already found this route before.
-                    if (!routes.Any(existing => existing.Count() == trace.Count - 1 && existing.All(node => trace.Contains(node))))
-                    {
-                        var route = new List<INode>(trace) { target };
-                        routes.Add(route);
-                    }
-                }
-                else
-                {
-                    // Otherwise, travel to this connection and continue the search
-                    BuildAllRoutes(connection, target, trace, travelled, routes, maxNodes);
-                }
-
-                travelled.Remove(road);
-            }
-            trace.RemoveAt(trace.Count - 1);
-        }
-
     }
 }
