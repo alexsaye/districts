@@ -1,0 +1,12 @@
+{
+  "name": "com.saye.districts",
+  "version": "0.0.0",
+  "displayName": "Districts",
+  "description": "Facilitates the planning of districts formed by connected roads.",
+  "unity": "2019.4",
+  "keywords": ["districts", "district", "road", "roads", "route", "routes", "plan", "planning", "city", "town"],
+  "license": "UNLICENSED",
+	"author": {
+		"name": "Alex Saye"
+	}
+}
