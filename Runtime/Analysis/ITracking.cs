@@ -8,7 +8,7 @@ namespace Saye.Districts.Analysis
     /// </summary>
     public interface ITracking
     {
-				Vector3 Position { get; }
+        Vector3 Position { get; }
         IRoute ClosestDistrict { get; }
         IRoad ClosestRoad { get; }
         Side ClosestSide { get; }

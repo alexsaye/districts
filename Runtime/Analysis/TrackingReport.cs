@@ -9,7 +9,7 @@ namespace Saye.Districts.Analysis
     /// </summary>
     public class TrackingReport : ITracking
     {
-				public Vector3 Position { get; private set; }
+        public Vector3 Position { get; private set; }
         public IRoute ClosestDistrict { get; private set; }
         public IRoad ClosestRoad { get; private set; }
         public Side ClosestSide { get; private set; }

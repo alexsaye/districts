@@ -13,7 +13,7 @@ namespace Saye.Districts.Analysis
 
         public TrackingReport Current { get; private set; }
 
-				public Vector3 Position => Current.Position;
+        public Vector3 Position => Current.Position;
 
         public IRoute ClosestDistrict => Current.ClosestDistrict;
 
