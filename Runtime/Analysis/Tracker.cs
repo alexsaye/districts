@@ -11,9 +11,9 @@ namespace Saye.Districts.Analysis
     {
         public readonly IPlan Plan;
 
-        public Vector3 Position { get; private set; }
-
         public TrackingReport Current { get; private set; }
+
+				public Vector3 Position => Current.Position;
 
         public IRoute ClosestDistrict => Current.ClosestDistrict;
 
@@ -26,7 +26,6 @@ namespace Saye.Districts.Analysis
         public Tracker(Vector3 position, IPlan plan)
         {
             Plan = plan;
-            Position = position;
             Current = new TrackingReport(position, plan);
         }
 
@@ -35,8 +34,6 @@ namespace Saye.Districts.Analysis
         /// </summary
         public TrackingReport Move(Vector3 position)
         {
-            Position = position;
-
             // Create a new report for the new position, but only against the nodes in the previous district.
             var previous = Current;
             Current = new TrackingReport(position, Plan, previous.ClosestDistrict.Nodes);

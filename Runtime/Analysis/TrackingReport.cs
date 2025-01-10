@@ -9,6 +9,7 @@ namespace Saye.Districts.Analysis
     /// </summary>
     public class TrackingReport : ITracking
     {
+				public Vector3 Position { get; private set; }
         public IRoute ClosestDistrict { get; private set; }
         public IRoad ClosestRoad { get; private set; }
         public Side ClosestSide { get; private set; }
@@ -20,6 +21,8 @@ namespace Saye.Districts.Analysis
 
         public TrackingReport(Vector3 position, IPlan plan, IEnumerable<IRoad> roads)
         {
+						Position = position;
+
             // Find the closest road and the closest point on that road.
             var closestSqrDistance = float.PositiveInfinity;
             foreach (var road in roads)
