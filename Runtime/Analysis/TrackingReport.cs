@@ -1,8 +1,8 @@
-using Saye.Districts.Model;
+using Districts.Model;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Saye.Districts.Analysis
+namespace Districts.Analysis
 {
     /// <summary>
     /// A report of tracking information within a plan.

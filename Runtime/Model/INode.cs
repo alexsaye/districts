@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// Describes a connection position for roads.

@@ -1,7 +1,7 @@
-using Saye.Districts.Model;
+using Districts.Model;
 using UnityEngine;
 
-namespace Saye.Districts.Analysis
+namespace Districts.Analysis
 {
     /// <summary>
     /// Describes spatial tracking information within a plan.

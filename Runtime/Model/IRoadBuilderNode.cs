@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// Describes a node that can build roads to other nodes.

@@ -1,7 +1,7 @@
-using Saye.Districts.Model;
+using Districts.Model;
 using System.Collections.Generic;
 
-namespace Saye.Districts.Analysis
+namespace Districts.Analysis
 {
     /// <summary>
     /// Describes a system for finding routes between nodes.

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// A straight road, the simplest road.

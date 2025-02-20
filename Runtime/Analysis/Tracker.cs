@@ -1,8 +1,8 @@
-using Saye.Districts.Model;
+using Districts.Model;
 using System.Linq;
 using UnityEngine;
 
-namespace Saye.Districts.Analysis
+namespace Districts.Analysis
 {
     /// <summary>
     /// Provides continuous tracking information within a plan, referencing previous tracking information to avoid unnecessary checks.

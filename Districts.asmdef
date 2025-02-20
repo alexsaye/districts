@@ -1,6 +1,6 @@
 {
     "name": "Districts",
-    "rootNamespace": "Saye.Districts",
+    "rootNamespace": "Districts",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

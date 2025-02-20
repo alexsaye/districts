@@ -1,4 +1,4 @@
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// The side of a road.

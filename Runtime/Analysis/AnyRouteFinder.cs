@@ -1,8 +1,8 @@
-using Saye.Districts.Model;
+using Districts.Model;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Saye.Districts.Analysis
+namespace Districts.Analysis
 {
     /// <summary>
     /// Finds routes between nodes without checking conditions.

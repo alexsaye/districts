@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// Describes a road going from one node to another node.

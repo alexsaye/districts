@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// Describes a route of nodes in order.

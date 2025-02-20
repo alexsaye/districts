@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Saye.Districts.Model
+namespace Districts.Model
 {
     /// <summary>
     /// A route of nodes in order.
