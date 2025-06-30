@@ -6,14 +6,14 @@ namespace Districts.Model
     /// <summary>
     /// Describes a route of nodes in order.
     /// </summary>
-    public interface IRoute
+    public interface IRoadRoute
     {
-        IEnumerable<INode> Nodes { get; }
+        IEnumerable<IRoadNode> Nodes { get; }
 
         /// <summary>
         /// Does a route end where it begins?
         /// </summary>
-        static bool Cyclic(IRoute route)
+        static bool Cyclic(IRoadRoute route)
         {
             return route.Nodes.First() == route.Nodes.Last();
         }

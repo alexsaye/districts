@@ -7,37 +7,37 @@ namespace Districts.Model
     /// <summary>
     /// A plan of nodes which form roads and districts.
     /// </summary>
-    public class Plan : IPlan
+    public class RoadPlan : IRoadPlan
     {
-        private readonly IDictionary<INode, IDictionary<INode, IRoad>> roadsByNode;
+        private readonly IDictionary<IRoadNode, IDictionary<IRoadNode, IRoad>> roadsByNode;
 
-        private readonly IDictionary<IRoad, IDictionary<Side, IRoute>> districtsBySideOfRoad;
+        private readonly IDictionary<IRoad, IDictionary<RoadSide, IRoadRoute>> districtsBySideOfRoad;
 
-        private readonly ICollection<IRoute> districts;
+        private readonly ICollection<IRoadRoute> districts;
 
-        public IEnumerable<INode> Nodes => roadsByNode.Keys;
+        public IEnumerable<IRoadNode> Nodes => roadsByNode.Keys;
 
         public IEnumerable<IRoad> Roads => districtsBySideOfRoad.Keys;
 
-        public IEnumerable<IRoute> Districts => districts;
+        public IEnumerable<IRoadRoute> Districts => districts;
 
-        public Plan(IEnumerable<IRoadBuilderNode> graph) : this(IRoadBuilderNode.Build(graph)) { }
+        public RoadPlan(IEnumerable<IRoadBuilderNode> graph) : this(IRoadBuilderNode.Build(graph)) { }
 
-        public Plan(IDictionary<INode, IDictionary<INode, IRoad>> graph)
+        public RoadPlan(IDictionary<IRoadNode, IDictionary<IRoadNode, IRoad>> graph)
         {
             // Deep copy the road graph. TODO: build the graph bidirectionally here instead of relying on it being provided already bidirectional.
-            roadsByNode = new Dictionary<INode, IDictionary<INode, IRoad>>();
+            roadsByNode = new Dictionary<IRoadNode, IDictionary<IRoadNode, IRoad>>();
             foreach (var (node, roads) in graph)
             {
-                roadsByNode.Add(node, new Dictionary<INode, IRoad>(roads));
+                roadsByNode.Add(node, new Dictionary<IRoadNode, IRoad>(roads));
             }
 
             // Build the districts by traversing each road forwards and backwards until we cover all roads in both directions with non-overlapping cycles.
-            districts = new List<IRoute>();
-            districtsBySideOfRoad = new Dictionary<IRoad, IDictionary<Side, IRoute>>();
+            districts = new List<IRoadRoute>();
+            districtsBySideOfRoad = new Dictionary<IRoad, IDictionary<RoadSide, IRoadRoute>>();
             foreach (var road in graph.Values.SelectMany(connections => connections.Values))
             {
-                districtsBySideOfRoad[road] = new Dictionary<Side, IRoute>();
+                districtsBySideOfRoad[road] = new Dictionary<RoadSide, IRoadRoute>();
             }
             var forwards = new HashSet<IRoad>();
             var backwards = new HashSet<IRoad>();
@@ -45,13 +45,13 @@ namespace Districts.Model
             {
                 if (!forwards.Contains(road))
                 {
-                    var forwardsDistrict = BuildDistrict(road.Start, road.End, forwards, backwards, new List<INode>());
+                    var forwardsDistrict = BuildDistrict(road.Start, road.End, forwards, backwards, new List<IRoadNode>());
                     districts.Add(forwardsDistrict);
                 }
 
                 if (!backwards.Contains(road))
                 {
-                    var backwardsDistrict = BuildDistrict(road.End, road.Start, forwards, backwards, new List<INode>());
+                    var backwardsDistrict = BuildDistrict(road.End, road.Start, forwards, backwards, new List<IRoadNode>());
                     districts.Add(backwardsDistrict);
                 }
             }
@@ -60,7 +60,7 @@ namespace Districts.Model
         /// <summary>
         /// Build a district by traversing a road, populating the districts by side of road cache.
         /// </summary>
-        private IRoute BuildDistrict(INode a, INode b, HashSet<IRoad> forwards, HashSet<IRoad> backwards, List<INode> found)
+        private IRoadRoute BuildDistrict(IRoadNode a, IRoadNode b, HashSet<IRoad> forwards, HashSet<IRoad> backwards, List<IRoadNode> found)
         {
             // Add the first node of the road to the district and cache which direction we're travelling along the road.
             var road = ConnectingRoad(a, b);
@@ -75,7 +75,7 @@ namespace Districts.Model
             }
 
             // Find the node connected to b which results in most rightward turn from the direction of the road. This bias means we follow the borders of the district by sticking to one side (like badly solving a maze).
-            INode connectingNode = null;
+            IRoadNode connectingNode = null;
             var rightestTurn = -float.PositiveInfinity;
             var roadDirection = Vector3.Normalize(b.Position - a.Position);
             foreach (var node in ConnectedNodes(b))
@@ -104,11 +104,11 @@ namespace Districts.Model
                 found.Add(b);
 
                 // Create the district from the found nodes.
-                var district = new Route(found);
+                var district = new RoadRoute(found);
 
                 // The current side of the road is right if we went forwards along it, left if we went backwards.
                 var currentRoad = connectingRoad;
-                var currentSide = b == currentRoad.Start ? Side.Right : Side.Left;
+                var currentSide = b == currentRoad.Start ? RoadSide.Right : RoadSide.Left;
                 districtsBySideOfRoad[currentRoad][currentSide] = district;
 
                 // Propagate the current side along the district, inverting it when roads converge or diverge. (Skip the first road as we've just cached its side.)
@@ -130,22 +130,22 @@ namespace Districts.Model
             return BuildDistrict(b, connectingNode, forwards, backwards, found);
         }
 
-        public IEnumerable<INode> ConnectedNodes(INode node)
+        public IEnumerable<IRoadNode> ConnectedNodes(IRoadNode node)
         {
             return roadsByNode[node].Keys;
         }
 
-        public IEnumerable<IRoad> ConnectedRoads(INode node)
+        public IEnumerable<IRoad> ConnectedRoads(IRoadNode node)
         {
             return roadsByNode[node].Values;
         }
 
-        public IRoad ConnectingRoad(INode a, INode b)
+        public IRoad ConnectingRoad(IRoadNode a, IRoadNode b)
         {
             return roadsByNode[a][b];
         }
 
-        public IEnumerable<IRoad> ConnectingRoads(IEnumerable<INode> nodes)
+        public IEnumerable<IRoad> ConnectingRoads(IEnumerable<IRoadNode> nodes)
         {
             var enumerator = nodes.GetEnumerator();
             if (!enumerator.MoveNext())
@@ -162,7 +162,7 @@ namespace Districts.Model
             }
         }
 
-        public IRoute ConnectedDistrict(IRoad road, Side side)
+        public IRoadRoute ConnectedDistrict(IRoad road, RoadSide side)
         {
             return districtsBySideOfRoad[road][side];
         }

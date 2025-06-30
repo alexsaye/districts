@@ -4,14 +4,14 @@ using UnityEngine;
 namespace Districts.Analysis
 {
     /// <summary>
-    /// Describes spatial tracking information within a plan.
+    /// Describes spatial tracking information within a road plan.
     /// </summary>
-    public interface ITracking
+    public interface IRoadTracking
     {
         Vector3 Position { get; }
-        IRoute ClosestDistrict { get; }
+        IRoadRoute ClosestDistrict { get; }
         IRoad ClosestRoad { get; }
-        Side ClosestSide { get; }
+        RoadSide ClosestSide { get; }
         Vector3 ClosestPoint { get; }
     }
 }

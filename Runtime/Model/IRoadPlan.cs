@@ -5,37 +5,37 @@ namespace Districts.Model
     /// <summary>
     /// Describes a plan of nodes which form roads and districts.
     /// </summary>
-    public interface IPlan
+    public interface IRoadPlan
     {
-        IEnumerable<INode> Nodes { get; }
+        IEnumerable<IRoadNode> Nodes { get; }
 
         IEnumerable<IRoad> Roads { get; }
 
-        IEnumerable<IRoute> Districts { get; }
+        IEnumerable<IRoadRoute> Districts { get; }
 
         /// <summary>
         /// Get the nodes connected to a node.
         /// </summary>
-        IEnumerable<INode> ConnectedNodes(INode node);
+        IEnumerable<IRoadNode> ConnectedNodes(IRoadNode node);
 
         /// <summary>
         /// Get the roads connected to a node.
         /// </summary>
-        IEnumerable<IRoad> ConnectedRoads(INode node);
+        IEnumerable<IRoad> ConnectedRoads(IRoadNode node);
 
         /// <summary>
         /// Get the connecting road between two nodes.
         /// </summary>
-        IRoad ConnectingRoad(INode a, INode b);
+        IRoad ConnectingRoad(IRoadNode a, IRoadNode b);
 
         /// <summary>
         /// Get the connecting roads along a series of nodes.
         /// </summary>
-        IEnumerable<IRoad> ConnectingRoads(IEnumerable<INode> nodes);
+        IEnumerable<IRoad> ConnectingRoads(IEnumerable<IRoadNode> nodes);
 
         /// <summary>
         /// Get the district adjacent to a side of a road.
         /// </summary>
-        IRoute ConnectedDistrict(IRoad road, Side side);
+        IRoadRoute ConnectedDistrict(IRoad road, RoadSide side);
     }
 }

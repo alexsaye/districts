@@ -5,7 +5,7 @@ namespace Districts.Model
     /// <summary>
     /// Describes a connection position for roads.
     /// </summary>
-    public interface INode
+    public interface IRoadNode
     {
         string Name { get; }
 

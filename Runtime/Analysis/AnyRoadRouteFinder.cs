@@ -7,26 +7,26 @@ namespace Districts.Analysis
     /// <summary>
     /// Finds routes between nodes without checking conditions.
     /// </summary>
-    public class AnyRouteFinder : IRouteFinder
+    public class AnyRoadRouteFinder : IRoadRouteFinder
     {
-        private readonly IPlan plan;
+        private readonly IRoadPlan plan;
 
-        public AnyRouteFinder(IPlan plan)
+        public AnyRoadRouteFinder(IRoadPlan plan)
         {
             this.plan = plan;
         }
 
-        public ICollection<IRoute> AllRoutes(INode a, INode b, int maxNodes)
+        public ICollection<IRoadRoute> AllRoutes(IRoadNode a, IRoadNode b, int maxNodes)
         {
-            var routes = new List<IRoute>();
-            BuildAllRoutes(a, b, new List<INode>(), new HashSet<IRoad>(), routes, maxNodes);
+            var routes = new List<IRoadRoute>();
+            BuildAllRoutes(a, b, new List<IRoadNode>(), new HashSet<IRoad>(), routes, maxNodes);
             return routes;
         }
 
         /// <summary>
         /// Perform a depth-first search to find all unique routes between two nodes, building up a found routes cache by caching the whole trace every time it finds the target node.
         /// </summary>
-        private void BuildAllRoutes(INode current, INode target, IList<INode> trace, ISet<IRoad> travelled, ICollection<IRoute> routes, int maxNodes)
+        private void BuildAllRoutes(IRoadNode current, IRoadNode target, IList<IRoadNode> trace, ISet<IRoad> travelled, ICollection<IRoadRoute> routes, int maxNodes)
         {
             if (trace.Count == maxNodes)
             {
@@ -59,8 +59,8 @@ namespace Districts.Analysis
                     // Cache the route if we haven't already found this route before.
                     if (!routes.Any(existing => existing.Nodes.Count() == trace.Count - 1 && existing.Nodes.All(node => trace.Contains(node))))
                     {
-                        var nodes = new List<INode>(trace) { target };
-                        var route = new Route(nodes);
+                        var nodes = new List<IRoadNode>(trace) { target };
+                        var route = new RoadRoute(nodes);
                         routes.Add(route);
                     }
                 }

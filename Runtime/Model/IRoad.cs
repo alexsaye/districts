@@ -9,19 +9,26 @@ namespace Districts.Model
     {
         string Name { get; }
 
-        INode Start { get; }
+        IRoadNode Start { get; }
 
-        INode End { get; }
+        IRoadNode End { get; }
+
+        float Length { get; }
 
         /// <summary>
         /// Get which side of the road the position is on compared with the direction of the road.
         /// </summary>
-        Side SideOfPoint(Vector3 position);
+        RoadSide SideOfPoint(Vector3 position);
 
         /// <summary>
         /// Get the closest point on the road to the given position.
         /// </summary>
         Vector3 ClosestPoint(Vector3 position);
+
+        /// <summary>
+        /// Get the closest node along the road to the given position.
+        /// </summary>
+        IRoadNode ClosestNode(Vector3 position);
 
         /// <summary>
         /// Are two roads connected by a convergence at their ends?
@@ -58,7 +65,7 @@ namespace Districts.Model
         /// <summary>
         /// Get the node shared by two connected roads. If the roads are connected to each other, the start node of the first road will be returned.
         /// </summary>
-        static INode SharedNode(IRoad a, IRoad b)
+        static IRoadNode SharedNode(IRoad a, IRoad b)
         {
             if (AreDiverging(a, b) || AreSequential(b, a))
             {
@@ -74,7 +81,7 @@ namespace Districts.Model
         /// <summary>
         /// Get the other node of the road that is not the given node.
         /// </summary>
-        static INode OtherNode(IRoad road, INode node)
+        static IRoadNode OtherNode(IRoad road, IRoadNode node)
         {
             if (road.Start.Equals(node))
             {

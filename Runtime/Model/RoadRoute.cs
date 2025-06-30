@@ -5,11 +5,11 @@ namespace Districts.Model
     /// <summary>
     /// A route of nodes in order.
     /// </summary>
-    public class Route : IRoute
+    public class RoadRoute : IRoadRoute
     {
-        public IEnumerable<INode> Nodes { get; private set; }
+        public IEnumerable<IRoadNode> Nodes { get; private set; }
 
-        public Route(IEnumerable<INode> nodes)
+        public RoadRoute(IEnumerable<IRoadNode> nodes)
         {
             Nodes = nodes;
         }

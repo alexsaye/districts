@@ -7,36 +7,36 @@ namespace Districts.Analysis
     /// <summary>
     /// Provides continuous tracking information within a plan, referencing previous tracking information to avoid unnecessary checks.
     /// </summary>
-    public class Tracker : ITracking
+    public class RoadTracker : IRoadTracking
     {
-        public readonly IPlan Plan;
+        public readonly IRoadPlan Plan;
 
-        public TrackingReport Current { get; private set; }
+        public RoadTrackingReport Current { get; private set; }
 
         public Vector3 Position => Current.Position;
 
-        public IRoute ClosestDistrict => Current.ClosestDistrict;
+        public IRoadRoute ClosestDistrict => Current.ClosestDistrict;
 
         public IRoad ClosestRoad => Current.ClosestRoad;
 
-        public Side ClosestSide => Current.ClosestSide;
+        public RoadSide ClosestSide => Current.ClosestSide;
 
         public Vector3 ClosestPoint => Current.ClosestPoint;
 
-        public Tracker(Vector3 position, IPlan plan)
+        public RoadTracker(Vector3 position, IRoadPlan plan)
         {
             Plan = plan;
-            Current = new TrackingReport(position, plan);
+            Current = new RoadTrackingReport(position, plan);
         }
 
         /// <summary>
         /// Move the tracker to a new position, reporting tracking information.
         /// </summary
-        public TrackingReport Move(Vector3 position)
+        public RoadTrackingReport Move(Vector3 position)
         {
             // Create a new report for the new position, but only against the nodes in the previous district.
             var previous = Current;
-            Current = new TrackingReport(position, Plan, previous.ClosestDistrict.Nodes);
+            Current = new RoadTrackingReport(position, Plan, previous.ClosestDistrict.Nodes);
 
             // Are we still in the same district?
             if (Current.ClosestDistrict == previous.ClosestDistrict)
@@ -52,7 +52,7 @@ namespace Districts.Analysis
             }
 
             // We have somehow teleported to a far away district, so create a new report against the whole plan.
-            Current = new TrackingReport(position, Plan);
+            Current = new RoadTrackingReport(position, Plan);
             return Current;
         }
     }

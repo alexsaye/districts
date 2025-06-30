@@ -7,21 +7,21 @@ namespace Districts.Analysis
     /// <summary>
     /// A report of tracking information within a plan.
     /// </summary>
-    public class TrackingReport : ITracking
+    public class RoadTrackingReport : IRoadTracking
     {
         public Vector3 Position { get; private set; }
-        public IRoute ClosestDistrict { get; private set; }
+        public IRoadRoute ClosestDistrict { get; private set; }
         public IRoad ClosestRoad { get; private set; }
-        public Side ClosestSide { get; private set; }
+        public RoadSide ClosestSide { get; private set; }
         public Vector3 ClosestPoint { get; private set; }
 
-        public TrackingReport(Vector3 position, IPlan plan) : this(position, plan, plan.Roads) { }
+        public RoadTrackingReport(Vector3 position, IRoadPlan plan) : this(position, plan, plan.Roads) { }
 
-        public TrackingReport(Vector3 position, IPlan plan, IEnumerable<INode> nodes) : this(position, plan, plan.ConnectingRoads(nodes)) { }
+        public RoadTrackingReport(Vector3 position, IRoadPlan plan, IEnumerable<IRoadNode> nodes) : this(position, plan, plan.ConnectingRoads(nodes)) { }
 
-        public TrackingReport(Vector3 position, IPlan plan, IEnumerable<IRoad> roads)
+        public RoadTrackingReport(Vector3 position, IRoadPlan plan, IEnumerable<IRoad> roads)
         {
-						Position = position;
+			Position = position;
 
             // Find the closest road and the closest point on that road.
             var closestSqrDistance = float.PositiveInfinity;
