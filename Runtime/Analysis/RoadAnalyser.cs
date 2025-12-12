@@ -7,7 +7,7 @@ namespace Districts.Analysis
     /// <summary>
     /// Provides continuous analysis of position within a plan, referencing previous analysis to avoid unnecessary checks.
     /// </summary>
-    public class RoadAnalysisProvider : IRoadAnalysis
+    public class RoadAnalyser : IRoadAnalysis
     {
         public readonly IRoadPlan Plan;
 
@@ -23,7 +23,7 @@ namespace Districts.Analysis
 
         public Vector3 ClosestPoint => Current.ClosestPoint;
 
-        public RoadAnalysisProvider(Vector3 position, IRoadPlan plan)
+        public RoadAnalyser(Vector3 position, IRoadPlan plan)
         {
             Plan = plan;
             Current = new RoadAnalysis(position, plan);
