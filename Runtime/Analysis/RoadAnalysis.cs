@@ -5,9 +5,9 @@ using UnityEngine;
 namespace Districts.Analysis
 {
     /// <summary>
-    /// A report of tracking information within a plan.
+    /// Analysis of a position within a plan.
     /// </summary>
-    public class RoadTrackingReport : IRoadTracking
+    public class RoadAnalysis : IRoadAnalysis
     {
         public Vector3 Position { get; private set; }
         public IRoadRoute ClosestDistrict { get; private set; }
@@ -15,11 +15,11 @@ namespace Districts.Analysis
         public RoadSide ClosestSide { get; private set; }
         public Vector3 ClosestPoint { get; private set; }
 
-        public RoadTrackingReport(Vector3 position, IRoadPlan plan) : this(position, plan, plan.Roads) { }
+        public RoadAnalysis(Vector3 position, IRoadPlan plan) : this(position, plan, plan.Roads) { }
 
-        public RoadTrackingReport(Vector3 position, IRoadPlan plan, IEnumerable<IRoadNode> nodes) : this(position, plan, plan.ConnectingRoads(nodes)) { }
+        public RoadAnalysis(Vector3 position, IRoadPlan plan, IEnumerable<IRoadNode> nodes) : this(position, plan, plan.ConnectingRoads(nodes)) { }
 
-        public RoadTrackingReport(Vector3 position, IRoadPlan plan, IEnumerable<IRoad> roads)
+        public RoadAnalysis(Vector3 position, IRoadPlan plan, IEnumerable<IRoad> roads)
         {
 			Position = position;
 

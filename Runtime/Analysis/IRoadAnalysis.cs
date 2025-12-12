@@ -6,7 +6,7 @@ namespace Districts.Analysis
     /// <summary>
     /// Describes spatial tracking information within a road plan.
     /// </summary>
-    public interface IRoadTracking
+    public interface IRoadAnalysis
     {
         Vector3 Position { get; }
         IRoadRoute ClosestDistrict { get; }

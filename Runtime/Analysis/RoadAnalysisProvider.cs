@@ -5,13 +5,13 @@ using UnityEngine;
 namespace Districts.Analysis
 {
     /// <summary>
-    /// Provides continuous tracking information within a plan, referencing previous tracking information to avoid unnecessary checks.
+    /// Provides continuous analysis of position within a plan, referencing previous analysis to avoid unnecessary checks.
     /// </summary>
-    public class RoadTracker : IRoadTracking
+    public class RoadAnalysisProvider : IRoadAnalysis
     {
         public readonly IRoadPlan Plan;
 
-        public RoadTrackingReport Current { get; private set; }
+        public RoadAnalysis Current { get; private set; }
 
         public Vector3 Position => Current.Position;
 
@@ -23,20 +23,20 @@ namespace Districts.Analysis
 
         public Vector3 ClosestPoint => Current.ClosestPoint;
 
-        public RoadTracker(Vector3 position, IRoadPlan plan)
+        public RoadAnalysisProvider(Vector3 position, IRoadPlan plan)
         {
             Plan = plan;
-            Current = new RoadTrackingReport(position, plan);
+            Current = new RoadAnalysis(position, plan);
         }
 
         /// <summary>
         /// Move the tracker to a new position, reporting tracking information.
         /// </summary
-        public RoadTrackingReport Move(Vector3 position)
+        public RoadAnalysis Move(Vector3 position)
         {
             // Create a new report for the new position, but only against the nodes in the previous district.
             var previous = Current;
-            Current = new RoadTrackingReport(position, Plan, previous.ClosestDistrict.Nodes);
+            Current = new RoadAnalysis(position, Plan, previous.ClosestDistrict.Nodes);
 
             // Are we still in the same district?
             if (Current.ClosestDistrict == previous.ClosestDistrict)
@@ -52,7 +52,7 @@ namespace Districts.Analysis
             }
 
             // We have somehow teleported to a far away district, so create a new report against the whole plan.
-            Current = new RoadTrackingReport(position, Plan);
+            Current = new RoadAnalysis(position, Plan);
             return Current;
         }
     }
