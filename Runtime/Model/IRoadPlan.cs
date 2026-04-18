@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Districts.Model
 {
@@ -12,6 +13,10 @@ namespace Districts.Model
         IEnumerable<IRoad> Roads { get; }
 
         IEnumerable<IRoadRoute> Districts { get; }
+
+        IEnumerable<IRoadNode> DeadEndNodes { get; }
+
+        IEnumerable<IRoadRoute> DeadEndRoutes { get; }
 
         /// <summary>
         /// Get the nodes connected to a node.
@@ -37,5 +42,25 @@ namespace Districts.Model
         /// Get the district adjacent to a side of a road.
         /// </summary>
         IRoadRoute ConnectedDistrict(IRoad road, RoadSide side);
+
+        /// <summary>
+        /// Get the districts adjacent to a node.
+        /// </summary>
+        IEnumerable<IRoadRoute> ConnectedDistricts(IRoadNode node);
+
+        /// <summary>
+        /// Get the district containing a position.
+        /// </summary>
+        IRoadRoute ContainingDistrict(Vector3 position);
+
+        /// <summary>
+        /// Get the district containing a position, searching only within a set of districts.
+        /// </summary>
+        IRoadRoute ContainingDistrict(Vector3 position, IEnumerable<IRoadRoute> searchDistricts);
+
+        /// <summary>
+        /// Get the roads contained within a district, including any dead-end roads within that district.
+        /// </summary>
+        IEnumerable<IRoad> ContainedRoads(IRoadRoute district);
     }
 }

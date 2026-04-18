@@ -36,7 +36,7 @@ namespace Districts.Analysis
         {
             // Create a new report for the new position, but only against the nodes in the previous district.
             var previous = Current;
-            Current = new RoadAnalysis(position, Plan, previous.ClosestDistrict.Nodes);
+            Current = new RoadAnalysis(position, Plan, Plan.ContainedRoads(previous.ClosestDistrict));
 
             // Are we still in the same district?
             if (Current.ClosestDistrict == previous.ClosestDistrict)

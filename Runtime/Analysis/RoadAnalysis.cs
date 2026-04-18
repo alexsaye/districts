@@ -17,8 +17,6 @@ namespace Districts.Analysis
 
         public RoadAnalysis(Vector3 position, IRoadPlan plan) : this(position, plan, plan.Roads) { }
 
-        public RoadAnalysis(Vector3 position, IRoadPlan plan, IEnumerable<IRoadNode> nodes) : this(position, plan, plan.ConnectingRoads(nodes)) { }
-
         public RoadAnalysis(Vector3 position, IRoadPlan plan, IEnumerable<IRoad> roads)
         {
 			Position = position;

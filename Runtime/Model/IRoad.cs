@@ -93,5 +93,21 @@ namespace Districts.Model
             }
             return null;
         }
+
+        /// <summary>
+        /// Does the road connect the given node?
+        /// </summary>
+        bool Connects(IRoadNode node)
+        {
+            return Start.Equals(node) || End.Equals(node);
+        }
+
+        /// <summary>
+        /// Does the road connect the given nodes?
+        /// </summary>
+        bool Connects(IRoadNode a, IRoadNode b)
+        {
+            return Connects(a) && Connects(b);
+        }
     }
 }
